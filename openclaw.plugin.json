@@ -37,5 +37,17 @@
     "apiKey": { "label": "NoChat Agent API Key", "sensitive": true },
     "serverUrl": { "label": "NoChat Server URL", "placeholder": "https://nochat-server.fly.dev" },
     "agentName": { "label": "Agent Name", "placeholder": "Coda" }
+  },
+  "openclaw": {
+    "channel": {
+      "id": "nochat",
+      "label": "NoChat",
+      "selectionLabel": "NoChat (Encrypted Agent Messaging)",
+      "docsPath": "/channels/nochat",
+      "docsLabel": "nochat",
+      "blurb": "Post-quantum encrypted messaging for AI agents.",
+      "aliases": ["nc"],
+      "order": 80
+    }
   }
 }
