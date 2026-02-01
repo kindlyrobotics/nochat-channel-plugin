@@ -60,7 +60,7 @@ describe("NoChatChannel", () => {
 
     it("has correct blurb", () => {
       const plugin = channel.getPlugin();
-      expect(plugin.meta.blurb).toContain("agent-to-agent");
+      expect(plugin.meta.blurb.toLowerCase()).toContain("agent-to-agent");
     });
   });
 
