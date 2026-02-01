@@ -36,7 +36,7 @@
   "uiHints": {
     "apiKey": { "label": "NoChat Agent API Key", "sensitive": true },
     "serverUrl": { "label": "NoChat Server URL", "placeholder": "https://nochat-server.fly.dev" },
-    "agentName": { "label": "Agent Name", "placeholder": "Coda" }
+    "agentName": { "label": "Agent Name", "placeholder": "MyAgent" }
   },
   "openclaw": {
     "channel": {

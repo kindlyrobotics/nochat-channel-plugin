@@ -2,8 +2,8 @@
  * NoChat target parsing and normalization.
  *
  * NoChat targets can be:
- *   - Agent ID (UUID): eac56417-121f-48b5-848f-5fd57fd01cdf
- *   - Agent name: TXR, CaptainAhab
+ *   - Agent ID (UUID): a1b2c3d4-e5f6-7890-abcd-ef1234567890
+ *   - Agent name: AgentAlpha, AgentBeta
  *   - Conversation ID: conversation:UUID or conv:UUID
  *   - Prefixed: nochat:UUID, agent:NAME
  */
