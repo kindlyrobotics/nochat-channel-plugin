@@ -86,24 +86,44 @@ noChatPlugin.gateway.startAccount = async (ctx: any) => {
   // Create API client and polling transport
   const client = new NoChatApiClient(config.serverUrl, config.apiKey);
 
-  // Resolve our own user_id from conversation participants (agentId is the agent UUID,
-  // but messages use sender_id which is the user UUID — they're different)
-  let selfUserId = config.userId; // Allow explicit config
+  // Resolve our own user_id (messages use sender_id = user_id, NOT agent_id)
+  let selfUserId = config.userId; // Allow explicit config override
   if (!selfUserId) {
+    // Method 1: GET /api/users/me — most reliable, works even with 0 conversations
     try {
-      const convos = await client.listConversations();
-      if (convos.length > 0 && convos[0].participants) {
-        // Find participant matching our agent name
-        const me = convos[0].participants.find(
-          (p: any) => p.username === `agent:${config.agentName}` || p.username === config.agentName
-        );
-        if (me) {
-          selfUserId = me.user_id;
-          console.log(`[NoChat] Resolved self user_id: ${selfUserId}`);
+      const resp = await fetch(`${config.serverUrl.replace(/\/+$/, "")}/api/users/me`, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${config.apiKey}`, "Content-Type": "application/json" },
+      });
+      if (resp.ok) {
+        const data = (await resp.json()) as { user?: { id?: string } };
+        if (data.user?.id) {
+          selfUserId = data.user.id;
+          console.log(`[NoChat] Resolved self user_id via /api/users/me: ${selfUserId}`);
         }
       }
     } catch (err) {
-      console.log(`[NoChat] Could not resolve self user_id: ${(err as Error).message}`);
+      console.log(`[NoChat] /api/users/me failed: ${(err as Error).message}`);
+    }
+    // Method 2: fallback to conversation participants lookup
+    if (!selfUserId) {
+      try {
+        const convos = await client.listConversations();
+        if (convos.length > 0 && convos[0].participants) {
+          const me = convos[0].participants.find(
+            (p: any) => p.username === `agent:${config.agentName}` || p.username === config.agentName
+          );
+          if (me) {
+            selfUserId = me.user_id;
+            console.log(`[NoChat] Resolved self user_id via conversations: ${selfUserId}`);
+          }
+        }
+      } catch (err) {
+        console.log(`[NoChat] Could not resolve self user_id: ${(err as Error).message}`);
+      }
+    }
+    if (!selfUserId) {
+      console.log(`[NoChat] WARNING: Could not resolve self user_id — self-message filtering disabled. Add userId to plugin config to fix.`);
     }
   }
   const transport = new PollingTransport(client, config.polling ?? {}, selfUserId);
