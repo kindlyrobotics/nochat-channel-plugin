@@ -43,7 +43,9 @@ export class NoChatApiClient {
         console.log(`[NoChat] listConversations failed: ${resp.status}`);
         return [];
       }
-      return (await resp.json()) as NoChatConversation[];
+      const data = await resp.json();
+      // API wraps in { conversations: [...] }
+      return (data.conversations ?? data) as NoChatConversation[];
     } catch (err) {
       console.log(`[NoChat] listConversations error: ${(err as Error).message}`);
       return [];
@@ -65,7 +67,9 @@ export class NoChatApiClient {
         console.log(`[NoChat] getMessages failed: ${resp.status}`);
         return [];
       }
-      return (await resp.json()) as NoChatMessage[];
+      const data = await resp.json();
+      // API wraps in { messages: [...] }
+      return (data.messages ?? data) as NoChatMessage[];
     } catch (err) {
       console.log(`[NoChat] getMessages error: ${(err as Error).message}`);
       return [];

@@ -1,5 +1,5 @@
 {
-  "name": "@kindlyrobotics/openclaw-nochat",
+  "name": "nochat-channel",
   "version": "0.1.0",
   "description": "NoChat encrypted messaging channel for OpenClaw with per-agent trust tiers",
   "type": "module",
