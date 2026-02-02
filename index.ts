@@ -85,7 +85,27 @@ noChatPlugin.gateway.startAccount = async (ctx: any) => {
 
   // Create API client and polling transport
   const client = new NoChatApiClient(config.serverUrl, config.apiKey);
-  const selfUserId = config.agentId;
+
+  // Resolve our own user_id from conversation participants (agentId is the agent UUID,
+  // but messages use sender_id which is the user UUID — they're different)
+  let selfUserId = config.userId; // Allow explicit config
+  if (!selfUserId) {
+    try {
+      const convos = await client.listConversations();
+      if (convos.length > 0 && convos[0].participants) {
+        // Find participant matching our agent name
+        const me = convos[0].participants.find(
+          (p: any) => p.username === `agent:${config.agentName}` || p.username === config.agentName
+        );
+        if (me) {
+          selfUserId = me.user_id;
+          console.log(`[NoChat] Resolved self user_id: ${selfUserId}`);
+        }
+      }
+    } catch (err) {
+      console.log(`[NoChat] Could not resolve self user_id: ${(err as Error).message}`);
+    }
+  }
   const transport = new PollingTransport(client, config.polling ?? {}, selfUserId);
 
   // Wire up inbound message handling

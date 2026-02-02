@@ -68,8 +68,9 @@ export class NoChatApiClient {
         return [];
       }
       const data = await resp.json();
-      // API wraps in { messages: [...] }
-      return (data.messages ?? data) as NoChatMessage[];
+      // API wraps in { messages: [...] } — handle null/missing gracefully
+      const messages = data.messages ?? data;
+      return Array.isArray(messages) ? messages : [] as NoChatMessage[];
     } catch (err) {
       console.log(`[NoChat] getMessages error: ${(err as Error).message}`);
       return [];
