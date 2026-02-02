@@ -10,6 +10,7 @@ const IDLE_THRESHOLD = 3; // consecutive idle polls before switching to idle int
 /**
  * Polling-based transport for receiving NoChat messages.
  * Adaptive interval: speeds up when active, slows down when idle.
+ * On startup, marks all existing messages as seen (no replay of history).
  */
 export class PollingTransport implements NoChatTransport {
   private readonly client: NoChatApiClient;
@@ -21,6 +22,7 @@ export class PollingTransport implements NoChatTransport {
   private timer: ReturnType<typeof setTimeout> | null = null;
   private consecutiveIdlePolls = 0;
   private currentInterval: number;
+  private initialPollDone = false;
 
   constructor(client: NoChatApiClient, config: PollingConfig = {}, selfId?: string) {
     this.client = client;
@@ -40,7 +42,13 @@ export class PollingTransport implements NoChatTransport {
   async start(): Promise<void> {
     if (this.running) return;
     this.running = true;
-    console.log(`[NoChat] Polling transport started (interval: ${this.currentInterval}ms)`);
+
+    // Catch-up: mark all existing messages as seen without dispatching
+    // This prevents replaying entire history on every restart
+    await this.catchUpExistingMessages();
+    this.initialPollDone = true;
+
+    console.log(`[NoChat] Polling transport started (interval: ${this.currentInterval}ms, caught up ${this.seenMessageIds.size} existing messages)`);
     this.scheduleNext();
   }
 
@@ -97,6 +105,28 @@ export class PollingTransport implements NoChatTransport {
   }
 
   // ── Private ───────────────────────────────────────────────────────────
+
+  /**
+   * On startup, fetch all conversations and mark existing messages as seen.
+   * This prevents replaying history after a gateway restart.
+   */
+  private async catchUpExistingMessages(): Promise<void> {
+    try {
+      const conversations = await this.client.listConversations();
+      for (const conv of conversations) {
+        try {
+          const messages = await this.client.getMessages(conv.id, 50);
+          for (const msg of messages) {
+            this.seenMessageIds.add(msg.id);
+          }
+        } catch (err) {
+          console.log(`[NoChat] Catch-up error for ${conv.id}: ${(err as Error).message}`);
+        }
+      }
+    } catch (err) {
+      console.log(`[NoChat] Catch-up error: ${(err as Error).message}`);
+    }
+  }
 
   private async pollConversation(conversationId: string): Promise<number> {
     try {

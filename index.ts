@@ -113,7 +113,8 @@ noChatPlugin.gateway.startAccount = async (ctx: any) => {
     try {
       await handleNoChatInbound(ctx, account, config, client, msg);
     } catch (err) {
-      console.error(`[NoChat] Error handling inbound message: ${(err as Error).message}`);
+      console.log(`[NoChat] Error handling inbound message: ${(err as Error).message}`);
+      console.log(`[NoChat] Error stack: ${(err as Error).stack}`);
     }
   });
 
@@ -158,7 +159,8 @@ async function handleNoChatInbound(
     text = msg.encrypted_content || "[unreadable message]";
   }
 
-  console.log(`[NoChat] Inbound from ${senderName}: ${text.slice(0, 80)}...`);
+  console.log(`[NoChat] Inbound from ${senderId.slice(0, 8)}: ${text.slice(0, 80)}...`);
+  console.log(`[NoChat] ctx.cfg exists: ${!!ctx.cfg}, core exists: ${!!core}, core.channel exists: ${!!core?.channel}`);
 
   // Resolve agent route (session key)
   const route = core.channel.routing.resolveAgentRoute({
@@ -167,6 +169,7 @@ async function handleNoChatInbound(
     accountId: account.accountId,
     peer: { kind: "dm", id: senderId },
   });
+  console.log(`[NoChat] Route resolved: sessionKey=${route.sessionKey}, agentId=${route.agentId}, accountId=${route.accountId}`);
 
   // Format the inbound envelope
   const envelopeOptions = core.channel.reply.resolveEnvelopeFormatOptions(ctx.cfg);
@@ -177,6 +180,7 @@ async function handleNoChatInbound(
     storePath,
     sessionKey: route.sessionKey,
   });
+  console.log(`[NoChat] Envelope prepared, storePath=${storePath}, dispatching...`);
 
   const body = core.channel.reply.formatAgentEnvelope({
     channel: "NoChat",
@@ -209,6 +213,7 @@ async function handleNoChatInbound(
   };
 
   // Dispatch: pushes inbound to agent, waits for reply, delivers reply back to NoChat
+  console.log(`[NoChat] Dispatching to session ${route.sessionKey}...`);
   await core.channel.reply.dispatchReplyWithBufferedBlockDispatcher({
     ctx: ctxPayload,
     cfg: ctx.cfg,
@@ -220,7 +225,7 @@ async function handleNoChatInbound(
 
         const conversationId = msg.conversation_id;
         if (!conversationId) {
-          console.error("[NoChat] No conversation_id on inbound message — cannot reply");
+          console.log("[NoChat] No conversation_id on inbound message — cannot reply");
           return;
         }
 
@@ -228,11 +233,11 @@ async function handleNoChatInbound(
         if (result.ok) {
           console.log(`[NoChat] Replied to ${senderName} in ${conversationId.slice(0, 8)}`);
         } else {
-          console.error(`[NoChat] Reply failed: ${result.error}`);
+          console.log(`[NoChat] Reply failed: ${result.error}`);
         }
       },
       onError: (err: unknown, info: { kind: string }) => {
-        console.error(`[NoChat] Dispatch error (${info.kind}): ${err}`);
+        console.log(`[NoChat] Dispatch error (${info.kind}): ${err}`);
       },
     },
   });
